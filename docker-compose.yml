@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  database_producao:
+    container_name: db-producao-valhalla-kitchen
+    image: mongo:latest
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    healthcheck:
+      test: mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api_producao:
+    container_name: api-producao-valhalla-kitchen
+    image: openjdk:latest
+    ports:
+      - "8082:8080"
+    environment:
+      PORT: ${PORT}
+      MONGODB_DATABASE: ${MONGODB_DATABASE}
+      MONGODB_HOST: ${MONGODB_HOST}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD}
+      MONGODB_USERNAME: ${MONGODB_USERNAME}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      AWS_SQS_ENDPOINT: ${AWS_SQS_ENDPOINT}
+      QUEUE_PEDIDO_APROVADO: ${QUEUE_PEDIDO_APROVADO}
+      QUEUE_ATUALIZACAO_SITUACAO_PEDIDO: ${QUEUE_ATUALIZACAO_SITUACAO_PEDIDO}
+    volumes:
+      - ./producao-valhalla-kitchen-1.0.jar:/usr/src/myapp/app.jar
+    command:
+      ["java" , "-Dspring.profiles.active='$SPRING_PROFILE'" , "-jar" ,"/usr/src/myapp/app.jar"]
+    depends_on:
+      database_producao:
+        condition: service_healthy
